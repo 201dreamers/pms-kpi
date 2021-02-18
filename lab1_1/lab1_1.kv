@@ -1,0 +1,42 @@
+#:kivy 2.0.0
+
+BoxLayout:
+    orientation: "vertical"
+
+    # MDToolbar:
+    #     id: toolbar
+    #     title: "Toolbar for lab1.1"
+    #     md_bg_color: app.theme_cls.primary_color
+    #     left_action_items: [["menu", lambda x: None]]
+
+    MDBottomNavigation:
+        id: panel
+
+        MDBottomNavigationItem:
+            name: "files1"
+            text: "General"
+            icon: "account-card-details-outline"
+
+            BoxLayout:
+                orientation: "vertical"
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(10)
+                pos_hint: {"center_x": .5, "center_y": .5}
+
+                MDLabel:
+                    font_style: "Body1"
+                    theme_text_color: "Primary"
+                    text: "Гакман Дмитро\nГрупа ІО-81\nЗК ІО-8103"
+                    halign: "center"
+
+        MDBottomNavigationItem:
+            name: "other_tab"
+            text: "Other"
+            icon: "menu"
+
+            MDLabel:
+                font_style: "Body1"
+                theme_text_color: "Primary"
+                text: "Go back to General tab"
+                halign: "center"

@@ -10,4 +10,4 @@ bin
 .buildozer
 *.bak
 *.odt
-protocol
+protocol[s]

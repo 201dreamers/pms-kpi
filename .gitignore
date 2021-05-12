@@ -11,3 +11,4 @@ bin
 *.bak
 *.odt
 protocol[s]
+*-master

@@ -13,6 +13,7 @@ from kivymd.uix.list import MDList, ThreeLineAvatarListItem, ImageLeftWidget
 from kivymd.uix.toolbar import MDToolbar
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.textfield import MDTextField
+from kivymd.uix.button import MDFloatingActionButton
 from kivymd.uix.bottomnavigation import (MDBottomNavigation,
                                          MDBottomNavigationItem)
 
@@ -21,6 +22,77 @@ from config import Config
 
 
 Builder.load_file(f"{Config.TEMPLATES_DIR}/ui.kv")
+
+
+class BookAdderScreen(MDScreen):
+    """Contains layout with functionality for adding new books to the list.
+
+    Also contains toolbar with buttons for getting back to the books list
+    and saving new book.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.book = None
+        self.layout = MDBoxLayout(orientation="vertical")
+
+        self.load_content()
+
+        self.add_widget(self.layout)
+
+    def load_content(self):
+        self.layout.clear_widgets()
+
+        toolbar = MDToolbar(type="top")
+        toolbar.left_action_items = [["arrow-left", self.go_back]]
+        toolbar.right_action_items = [["plus", self.add_book]]
+
+        title_label = MDLabel(
+            text="Title: ",
+            halign="left",
+            valign="top",
+        )
+        subtitle_label = MDLabel(
+            text="Subtitle: ",
+            halign="left",
+            valign="top",
+        )
+        price_label = MDLabel(
+            text="Price: ",
+            halign="left",
+            valign="top",
+        )
+
+        title_input = MDTextField(
+            text="Title: "
+        )
+        subtitle_input = MDTextField(
+            text="Subtitle: "
+        )
+        price_input = MDTextField(
+            text="Price: "
+        )
+
+        self.layout.add_widget(toolbar)
+        self.layout.add_widget(title_label)
+        self.layout.add_widget(title_input)
+        self.layout.add_widget(subtitle_label)
+        self.layout.add_widget(subtitle_input)
+        self.layout.add_widget(price_label)
+        self.layout.add_widget(price_input)
+
+    def go_back(self, touch):
+        self.layout.clear_widgets()
+        self.manager.transition.direction = "right"
+        self.manager.switch_to(BooksTab.screens["books_list"])
+
+    def add_book(self, touch):
+        print("add book")
+        # BooksTab.screens["books_list"].books.remove(self.book)
+        # books_list = BooksTab.screens["books_list"].books
+        # BooksTab.screens["books_list"].load_books_list(books_list)
+        # self.go_back(touch)
 
 
 class MDScrollableLabel(ScrollView):
@@ -75,7 +147,7 @@ class BookInfoContent(MDBoxLayout):
 
 
 class BookInfoScreen(MDScreen):
-    """Screen that contains layout with detailed information about the choosen
+    """Contains layout with detailed information about the choosen
     book.
 
     Also containstoolbar with buttons for getting back to the books list
@@ -112,7 +184,8 @@ class BookInfoScreen(MDScreen):
 
     def delete_item(self, touch):
         BooksTab.screens["books_list"].books.remove(self.book)
-        BooksTab.screens["books_list"].load_books_list()
+        books_list = BooksTab.screens["books_list"].books
+        BooksTab.screens["books_list"].load_books_list(books_list)
         self.go_back(touch)
 
 
@@ -171,12 +244,17 @@ class BooksListScreen(MDScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # In this small block books are generated from the json file.
+        # In this small block, books are generated from the json file.
         # (from the task)
         self.books = []
         json_books = BooksProvider.load_books_from_json()
         for json_book in json_books:
             self.books.append(Book(**json_book))
+
+        add_book_button = MDFloatingActionButton(
+            icon="plus",
+            on_release=self.open_book_adder_screen
+        )
 
         # Creating layout where all inner parts will be placed
         # (such as the foundation of the house)
@@ -199,6 +277,7 @@ class BooksListScreen(MDScreen):
 
         # And the layout is put into this screen
         self.add_widget(self.layout)
+        self.add_widget(add_book_button)
 
     def load_books_list(self, books):
         """ Method that loads list of books to the screen.
@@ -221,6 +300,12 @@ class BooksListScreen(MDScreen):
 
         # Add list to the scroll view
         self.scroll_view.add_widget(mdlist)
+
+    def open_book_adder_screen(self, touch):
+        """Called when the user taps on the button and releases it"""
+        BooksTab.screens["book_adder"].load_content()
+        BooksTab.screen_manager.transition.direction = "left"
+        BooksTab.screen_manager.switch_to(BooksTab.screens["book_adder"])
 
 
 class BooksTab(MDBottomNavigationItem):
@@ -247,7 +332,8 @@ class BooksTab(MDBottomNavigationItem):
         # Here are created two screens that is used in BookTab.
         BooksTab.screens = {
             "books_list": BooksListScreen(name="books_list"),
-            "book_info": BookInfoScreen(name="book_info")
+            "book_info": BookInfoScreen(name="book_info"),
+            "book_adder": BookAdderScreen(name="book_adder")
         }
 
         # Put created screens into Screen Manager.

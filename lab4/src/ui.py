@@ -34,7 +34,6 @@ class BookAdderScreen(MDScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.book = None
         self.layout = MDBoxLayout(orientation="vertical")
 
         self.load_content()
@@ -64,23 +63,17 @@ class BookAdderScreen(MDScreen):
             valign="top",
         )
 
-        title_input = MDTextField(
-            text="Title: "
-        )
-        subtitle_input = MDTextField(
-            text="Subtitle: "
-        )
-        price_input = MDTextField(
-            text="Price: "
-        )
+        self.title_input = MDTextField()
+        self.subtitle_input = MDTextField()
+        self.price_input = MDTextField()
 
         self.layout.add_widget(toolbar)
         self.layout.add_widget(title_label)
-        self.layout.add_widget(title_input)
+        self.layout.add_widget(self.title_input)
         self.layout.add_widget(subtitle_label)
-        self.layout.add_widget(subtitle_input)
+        self.layout.add_widget(self.subtitle_input)
         self.layout.add_widget(price_label)
-        self.layout.add_widget(price_input)
+        self.layout.add_widget(self.price_input)
 
     def go_back(self, touch):
         self.layout.clear_widgets()
@@ -88,11 +81,15 @@ class BookAdderScreen(MDScreen):
         self.manager.switch_to(BooksTab.screens["books_list"])
 
     def add_book(self, touch):
-        print("add book")
-        # BooksTab.screens["books_list"].books.remove(self.book)
-        # books_list = BooksTab.screens["books_list"].books
-        # BooksTab.screens["books_list"].load_books_list(books_list)
-        # self.go_back(touch)
+        book = Book(
+            title=self.title_input.text,
+            subtitle=self.subtitle_input.text,
+            price=self.price_input.text
+        )
+        BooksTab.screens["books_list"].books.append(book)
+        books_list = BooksTab.screens["books_list"].books
+        BooksTab.screens["books_list"].load_books_list(books_list)
+        self.go_back(touch)
 
 
 class MDScrollableLabel(ScrollView):

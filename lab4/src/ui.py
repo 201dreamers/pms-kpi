@@ -35,7 +35,6 @@ class BookAdderScreen(MDScreen):
         super().__init__(**kwargs)
 
         self.layout = MDBoxLayout(orientation="vertical")
-
         self.load_content()
 
         self.add_widget(self.layout)
@@ -129,7 +128,7 @@ class BookInfoContent(MDBoxLayout):
         # Create cover of the book
         cover = Image(source=book.details.image_path)
         # Create label with text_info previously created.
-        info = MDScrollableLabel(
+        info = MDLabel(
             text=text_info,
             markup=True,
             split_str=" ",
@@ -139,8 +138,8 @@ class BookInfoContent(MDBoxLayout):
         )
 
         # Add book cover and detailed information to the layout
-        self.add_widget(info)
         self.add_widget(cover)
+        self.add_widget(info)
 
 
 class BookInfoScreen(MDScreen):
@@ -153,6 +152,9 @@ class BookInfoScreen(MDScreen):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        scroll_view = ScrollView()
+        self.layout = MDBoxLayout(orientation="vertical")
+        self.add_widget(self.layout)
 
     def load_screen(self, book):
         """Loads all elements for the detailed info.
@@ -161,7 +163,6 @@ class BookInfoScreen(MDScreen):
         information.
         """
         self.book = book
-        layout = MDBoxLayout(orientation="vertical")
 
         toolbar = MDToolbar(type="top")
         toolbar.left_action_items = [["arrow-left", self.go_back]]
@@ -169,13 +170,12 @@ class BookInfoScreen(MDScreen):
 
         content = BookInfoContent(book)
 
-        layout.add_widget(toolbar)
-        layout.add_widget(content)
+        self.layout.add_widget(toolbar)
+        self.layout.add_widget(content)
 
-        self.add_widget(layout)
 
     def go_back(self, touch):
-        self.clear_widgets()
+        self.layout.clear_widgets()
         self.manager.transition.direction = "right"
         self.manager.switch_to(BooksTab.screens["books_list"])
 
@@ -341,6 +341,45 @@ class BooksTab(MDBottomNavigationItem):
         self.add_widget(BooksTab.screen_manager)
 
 
+class PersonalTab(MDBottomNavigationItem):
+    """Tab that contains personal information."""
+
+    def __init__(self, **kwargs):
+        # Giving main text and icon to this tab
+        super().__init__(name="general", text="General",
+                         icon="account-box", **kwargs)
+
+        layout = MDBoxLayout(
+            orientation="vertical",
+            size_hint_y=None,
+            pos_hint={"center_x": 0.5, "center_y": 0.5}
+        )
+        layout.height = layout.minimum_height
+
+        personal_info = MDLabel(
+            font_style="Body1",
+            theme_text_color="Primary",
+            text="Гакман Дмитро\nГрупа ІО-81\nЗК ІО-8103",
+            halign="center"
+        )
+
+        layout.add_widget(personal_info)
+        self.add_widget(layout)
+
+
+class GraphTab(MDBottomNavigationItem):
+    """Tab that contains personal information."""
+
+    def __init__(self, **kwargs):
+        # Giving main text and icon to this tab
+        super().__init__(name="graph", text="Graph",
+                         icon="graph", **kwargs)
+
+        layout = MDBoxLayout(orientation="vertical")
+
+        self.add_widget(layout)
+
+
 class UI(MDScreen):
     """Main application screen. Contains all elements in the app."""
 
@@ -351,7 +390,7 @@ class UI(MDScreen):
         self.tabs_navigation = MDBottomNavigation()
 
         # List of tabs that will be displayed in the app
-        self.tabs = (BooksTab(),)
+        self.tabs = (PersonalTab(), GraphTab(), BooksTab())
         for tab in self.tabs:
             self.tabs_navigation.add_widget(tab)
 

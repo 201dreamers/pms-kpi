@@ -1,150 +1,116 @@
+import os
+
 from kivy.lang import Builder
 from kivy.metrics import dp
-from kivy.uix.screenmanager import ScreenManager
 from kivymd.uix.bottomnavigation import MDBottomNavigationItem
 from kivymd.uix.imagelist import SmartTile
 from kivy.uix.scrollview import ScrollView
 from kivymd.uix.gridlayout import MDGridLayout
-from kivymd.uix.toolbar import MDToolbar
-from kivymd.uix.screen import MDScreen
 from kivymd.uix.button import MDFloatingActionButton
-# from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.filemanager import MDFileManager
+from kivymd.toast import toast
 from config import Config
 
 
 Builder.load_file(f"{Config.TEMPLATES_DIR}/imagecollectiontab.kv")
 
 
-class StandardImage(SmartTile):
+class ImageCell(SmartTile):
 
     def __init__(self, **kwargs):
-        super().__init__(height=dp(240), **kwargs)
-        self.minimum_height = self.height
-        self.box_color
+        super().__init__(**kwargs)
+        self.box_color = (0, 0, 0, 0)
 
 
-class ImageAdderScreen(MDScreen):
+class ImagesGrid(MDGridLayout):
+    def __init__(self, scale=1, **kwargs):
+        super().__init__(**kwargs)
+        self.padding = (dp(2), dp(2))
+        self.spacing = dp(4)
+
+
+class ImageChooser(MDFileManager):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        layout = MDGridLayout(cols=1)
+        self.exit_manager = self.exit
+        self.preview = False
+        self.external_storage = os.getenv('EXTERNAL_STORAGE')
+        self.images_folder = f"{self.external_storage}/Pictures"
 
-        toolbar = MDToolbar(type="top")
-        toolbar.left_action_items = [["arrow-left", self.go_back]]
-        toolbar.right_action_items = [["plus", self.add_image]]
+    def select_path(self, path):
+        ImageCollectionTab.image_collection.new_image.source = path
+        self.exit()
+        toast("You have selected an image")
 
-        self.scroll_view = ScrollView()
+    def exit(self, *args):
+        self.close()
 
-        layout.add_widget(toolbar)
-        layout.add_widget(self.scroll_view)
-        self.add_widget(layout)
-
-    def load_content(self):
-        self.scroll_view.clear_widgets()
-        layout = MDGridLayout(cols=1)
-        self.scroll_view.add_widget(layout)
-
-    def go_back(self, touch):
-        self.scroll_view.clear_widgets()
-        self.manager.transition.direction = "right"
-        self.manager.switch_to(ImageCollectionTab.screens["image_collection"])
-
-    def add_image(self, touch):
-        pass
-        # book = Book(
-        #     title=self.title_input.text,
-        #     subtitle=self.subtitle_input.text,
-        #     price=self.price_input.text
-        # )
-        # BooksTab.screens["books_list"].books.append(book)
-        # books_list = BooksTab.screens["books_list"].books
-        # BooksTab.screens["books_list"].load_books_list(books_list)
-        # self.go_back(touch)
+    def open(self):
+        toast(self.images_folder)
+        self.show(self.images_folder)
 
 
-class ImageCollectionScreen(MDScreen):
+class ImageCollection(MDGridLayout):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(cols=1, **kwargs)
 
+        self.__next_image_index = 0
         self.images = (
-            StandardImage(),
-            StandardImage(),
-            StandardImage(),
-            StandardImage(),
-            StandardImage(),
-            StandardImage(),
-            StandardImage(),
-            StandardImage(),
-            StandardImage(),
+            ImageCell(),
+            ImageCell(),
+            ImageCell(),
+            ImageCell(),
+            ImageCell(),
+            ImageCell(),
+            ImageCell(),
+            ImageCell(),
+            ImageCell(),
         )
 
-        layout = MDGridLayout(cols=1)
-
-        # toolbar = MDToolbar(type="top")
-        # toolbar.right_action_items = [["plus", self.add_image]]
-
-        add_image_button = MDFloatingActionButton(
+        self.add_image_button = MDFloatingActionButton(
             icon="plus",
-            on_release=self.open_image_adder_screen
+            on_release=self.open_image_chooser
         )
 
-        self.scroll_view = ScrollView()
+        self.scroll_view = ScrollView(size_hint=(1, 1))
+        self.layout = ImagesGrid(cols=1, size_hint=(1, 1.1))
 
         self.load_images()
 
-        layout.add_widget(self.scroll_view)
-        layout.add_widget(add_image_button)
-        self.add_widget(layout)
+        self.scroll_view.add_widget(self.layout)
+        self.add_widget(self.scroll_view)
+        self.add_widget(self.add_image_button)
 
-    def open_image_adder_screen(self, touch):
-        ImageCollectionTab.screens["image_adder"].load_content()
-        ImageCollectionTab.screen_manager.transition.direction = "left"
-        ImageCollectionTab.screen_manager.switch_to(
-            ImageCollectionTab.screens["image_adder"]
-        )
+    @property
+    def new_image(self):
+        if self.__next_image_index > 8:
+            self.__next_image_index = 0
+        cell = self.images[self.__next_image_index]
+        self.__next_image_index += 1
+        return cell
+
+    def open_image_chooser(self, touch):
+        ImageCollectionTab.image_chooser.open()
 
     def load_images(self):
-        self.scroll_view.clear_widgets()
+        self.layout.clear_widgets()
 
-        layout = MDGridLayout(cols=1, padding=(dp(4), dp(4)), spacing=dp(4))
-        first_row_layout = MDGridLayout(
-            cols=3,
-            rows=1,
-            padding=(dp(4), dp(4)),
-            spacing=dp(4)
-        )
-        last_row_layout = MDGridLayout(
-            cols=3,
-            rows=1,
-            padding=(dp(4), dp(4)),
-            spacing=dp(4)
-        )
-        middle_block_layout = MDGridLayout(
-            cols=2,
-            rows=1,
-            padding=(dp(4), dp(4)),
-            spacing=dp(4)
-        )
-        inner_small_images_layout = MDGridLayout(
-            cols=1,
-            rows=2,
-            padding=(dp(4), dp(4)),
-            spacing=(dp(4))
-        )
-        inner_big_image_layout = MDGridLayout(
-            cols=1,
-            rows=1,
-            padding=(dp(4), dp(4)),
-            spacing=(dp(4))
-        )
+        first_row_layout = ImagesGrid(cols=3, rows=1, size_hint=(1, 0.25))
+        last_row_layout = ImagesGrid(cols=3, rows=1, size_hint=(1, 0.25))
+        middle_block_layout = ImagesGrid(cols=2, rows=1, size_hint=(1, 0.5))
+        inner_small_images_layout = ImagesGrid(
+            cols=1, rows=2, size_hint=(0.33, 1))
+        inner_big_image_layout = ImagesGrid(
+            cols=1, rows=1, scale=2, size_hint=(0.66, 1))
 
         first_row_layout.add_widget(self.images[0])
         first_row_layout.add_widget(self.images[1])
         first_row_layout.add_widget(self.images[2])
 
         inner_small_images_layout.add_widget(self.images[3])
-        inner_small_images_layout.add_widget(self.images[4])
-        inner_big_image_layout.add_widget(self.images[5])
+        inner_big_image_layout.add_widget(self.images[4])
+        inner_small_images_layout.add_widget(self.images[5])
 
         middle_block_layout.add_widget(inner_small_images_layout)
         middle_block_layout.add_widget(inner_big_image_layout)
@@ -153,30 +119,24 @@ class ImageCollectionScreen(MDScreen):
         last_row_layout.add_widget(self.images[7])
         last_row_layout.add_widget(self.images[8])
 
-        layout.add_widget(first_row_layout)
-        layout.add_widget(middle_block_layout)
-        layout.add_widget(last_row_layout)
-
-        self.scroll_view.add_widget(layout)
+        self.layout.add_widget(first_row_layout)
+        self.layout.add_widget(middle_block_layout)
+        self.layout.add_widget(last_row_layout)
 
 
 class ImageCollectionTab(MDBottomNavigationItem):
     """Tab that contains personal information."""
 
-    screen_manager = None
-    screens = None
+    image_chooser = None
+    image_collection = None
+    x_size = None
 
     def __init__(self, **kwargs):
         super().__init__(name="img_collection", text="Images",
                          icon="image-frame", **kwargs)
 
-        ImageCollectionTab.screen_manager = ScreenManager()
-        ImageCollectionTab.screens = {
-            "image_collection": ImageCollectionScreen(name="image_collection"),
-            "image_adder": ImageAdderScreen(name="image_adder")
-        }
+        ImageCollectionTab.x_size = self.size[0]
+        ImageCollectionTab.image_chooser = ImageChooser()
+        ImageCollectionTab.image_collection = ImageCollection()
 
-        for screen in self.screens.values():
-            ImageCollectionTab.screen_manager.add_widget(screen)
-
-        self.add_widget(ImageCollectionTab.screen_manager)
+        self.add_widget(ImageCollectionTab.image_collection)

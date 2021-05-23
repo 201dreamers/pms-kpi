@@ -1,10 +1,10 @@
 [app]
 
 # (str) Title of your application
-title = Lab 4 HD8103
+title = Lab 5 HD8103
 
 # (str) Package name
-package.name = lab4
+package.name = lab5
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = ua.kpi.comsys.io8103
@@ -28,7 +28,7 @@ source.include_exts = py,png,jpg,kv,atlas,txt,json
 # source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 4
+version = 5
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]

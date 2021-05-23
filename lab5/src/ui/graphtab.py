@@ -14,7 +14,7 @@ class GraphTab(MDBottomNavigationItem):
     def __init__(self, **kwargs):
         # Giving main text and icon to this tab
         super().__init__(name="graph", text="Graph",
-                         icon="graph", **kwargs)
+                         icon="chart-pie", **kwargs)
 
         layout = MDBoxLayout(orientation="vertical")
 

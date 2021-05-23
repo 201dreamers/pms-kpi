@@ -8,9 +8,9 @@ from kivymd.uix.screen import MDScreen
 from kivymd.uix.bottomnavigation import MDBottomNavigation
 
 from config import Config
-# from src.ui.personaltab import PersonalTab
-# from src.ui.graphtab import GraphTab
-# from src.ui.bookstab import BooksTab
+from src.ui.personaltab import PersonalTab
+from src.ui.graphtab import GraphTab
+from src.ui.bookstab import BooksTab
 from src.ui.imagecollectiontab import ImageCollectionTab
 
 
@@ -28,9 +28,9 @@ class UI(MDScreen):
 
         # List of tabs that will be displayed in the app
         self.tabs = (
-            # PersonalTab(),
-            # GraphTab(),
-            # BooksTab(),
+            PersonalTab(),
+            GraphTab(),
+            BooksTab(),
             ImageCollectionTab(),
         )
         for tab in self.tabs:

@@ -8,7 +8,6 @@ from kivy.uix.scrollview import ScrollView
 from kivymd.uix.gridlayout import MDGridLayout
 from kivymd.uix.button import MDFloatingActionButton
 from kivymd.uix.filemanager import MDFileManager
-from kivymd.toast import toast
 from config import Config
 
 
@@ -22,107 +21,145 @@ class ImageCell(SmartTile):
         self.box_color = (0, 0, 0, 0)
 
 
-class ThreeHorizontalImagesGrid(MDGridLayout):
+class ImageGrid(MDGridLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.padding = (dp(2), dp(2))
+        self.spacing = dp(4)
+
+    def get_free_cell(self):
+        for image in self.images:
+            if not image.source:
+                return image
+        return
+
+    def add_image_cells(self):
+        for image in self.images:
+            self.add_widget(image)
+
+
+class ThreeHorizontalImagesGrid(ImageGrid):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cols = 3
         self.rows = 1
-        self.size_hint = (1, 0.25)
-        self.padding = (dp(2), dp(2))
-        self.spacing = dp(4)
-
-    @property
-    def has_free_cells(self):
-        if len(self.cols) >= len(self.children):
-            return False
-        return True
+        self.size_hint = (1, 0.083)
+        self.images = (ImageCell(), ImageCell(), ImageCell())
+        self.add_image_cells()
 
 
-class ThreeImagesBlockGrid(MDGridLayout):
+class ThreeImagesBlockGrid(ImageGrid):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cols = 2
         self.rows = 1
-        self.size_hint = (1, 0.5)
-        self.padding = (dp(2), dp(2))
-        self.spacing = dp(4)
+        self.size_hint = (1, 0.16)
 
 
-class TwoVerticalImagesGrid(MDGridLayout):
+class TwoVerticalImagesGrid(ImageGrid):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cols = 1
         self.rows = 2
-        self.size_hint = (0.33, 1)
-        self.padding = (dp(2), dp(2))
-        self.spacing = dp(4)
-
-    @property
-    def has_free_cells(self):
-        if len(self.rows) >= len(self.children):
-            return False
-        return True
+        self.size_hint = (0.33, 0.083)
+        self.images = (ImageCell(), ImageCell())
+        self.add_image_cells()
 
 
-class BigImageGrid(MDGridLayout):
+class BigImageGrid(ImageGrid):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cols = 1
         self.rows = 1
-        self.size_hint = (0.66, 1)
-        self.padding = (dp(2), dp(2))
-        self.spacing = dp(4)
+        self.size_hint = (0.66, 0.16)
+        self.images = (ImageCell(),)
+        self.add_image_cells()
 
-    @property
-    def has_free_cells(self):
-        if len(self.rows) >= len(self.children):
-            return False
-        return True
+
+class BlockOfImages(ImageGrid):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._current_grid = None
+
+        self._first_row_grid = None
+        self._middle_block_grid = None
+        self._middle_small_images_grid = None
+        self._middle_big_image_grid = None
+        self._last_row_grid = None
+
+        self.cols = 1
+        self.size_hint = (1, 1.1)
+
+        self.images = []
+        self._make_new_grid()
+
+    def _to_next_grid(self):
+        if self._current_grid == self._first_row_grid:
+            self._current_grid = self._middle_small_images_grid
+        elif self._current_grid == self._middle_small_images_grid:
+            self._current_grid = self._middle_big_image_grid
+        elif self._current_grid == self._middle_big_image_grid:
+            self._current_grid = self._last_row_grid
+        elif self._current_grid == self._last_row_grid:
+            self._make_new_grid()
+
+    def get_free_cell(self):
+        print(self._last_row_grid.children[0].source)
+        print(self._last_row_grid.children[1].source)
+        print(self._last_row_grid.children[2].source)
+        print("skip")
+        if self._last_row_grid.children[2].source:
+            print("last row end")
+            return
+        image = self._current_grid.get_free_cell()
+        if not image:
+            self._to_next_grid()
+            image = self._current_grid.get_free_cell()
+        return image
+
+    def _make_new_grid(self):
+        self._first_row_grid = ThreeHorizontalImagesGrid()
+        self._last_row_grid = ThreeHorizontalImagesGrid()
+
+        self._middle_block_grid = ThreeImagesBlockGrid()
+        self._middle_small_images_grid = TwoVerticalImagesGrid()
+        self._middle_big_image_grid = BigImageGrid()
+
+        self._middle_block_grid.add_widget(self._middle_small_images_grid)
+        self._middle_block_grid.add_widget(self._middle_big_image_grid)
+
+        self.add_widget(self._first_row_grid)
+        self.add_widget(self._middle_block_grid)
+        self.add_widget(self._last_row_grid)
+
+        self._current_grid = self._first_row_grid
 
 
 class ImageGridBuilder(MDGridLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.blocks = [BlockOfImages(), BlockOfImages(), BlockOfImages()]
+        self._idx = 0
+        self._current_block = self.blocks[self._idx]
         self.cols = 1
-        self.size_hint = (1, 1.1)
-        self._current_grid = None
-        self.images = []
-        self._to_next_grid()
+        self.size_hint = (1, 3.3)
 
-    def _to_next_grid(self):
-        if self._current_grid == self.first_row_grid:
-            self._current_grid = self.middle_small_images_grid
-        elif self._current_grid == self.middle_small_images_grid:
-            self._current_grid = self.middle_big_image_grid
-        elif self._current_grid == self.middle_big_image_grid:
-            self._current_grid = self.last_row_grid
-        else:
-            self._make_new_grid()
-            self._current_grid = self.first_row_grid
+        for block in self.blocks:
+            self.add_widget(block)
+
+    def _to_next_block(self):
+        self._idx += 1
+        self._current_block = self.blocks[self._idx]
 
     def add_image(self, source):
-        image = ImageCell(source=source)
-        if not self._current_grid.has_free_cells:
-            self._to_next_grid()
-        self._current_grid.add_widget(image)
-
-    def _make_new_grid(self):
-        self.first_row_grid = ThreeHorizontalImagesGrid()
-        self.last_row_grid = ThreeHorizontalImagesGrid()
-        middle_block_grid = ThreeImagesBlockGrid()
-        self.middle_small_images_grid = TwoVerticalImagesGrid()
-        self.middle_big_image_grid = BigImageGrid()
-
-        middle_block_grid.add_widget(self.middle_small_images_grid)
-        middle_block_grid.add_widget(self.middle_big_image_grid)
-
-        self.last_row_grid.add_widget(self.images[6])
-        self.last_row_grid.add_widget(self.images[7])
-        self.last_row_grid.add_widget(self.images[8])
-
-        self.add_widget(self.first_row_grid)
-        self.add_widget(middle_block_grid)
-        self.add_widget(self.last_row_grid)
+        image = self._current_block.get_free_cell()
+        print(self._idx)
+        print(image)
+        if not image:
+            self._to_next_block()
+            image = self._current_block.get_free_cell()
+            print(self._idx)
+        image.source = source
 
 
 class ImageChooser(MDFileManager):
@@ -137,13 +174,11 @@ class ImageChooser(MDFileManager):
     def select_path(self, path):
         ImageCollectionTab.image_collection.builder.add_image(path)
         self.exit()
-        toast("You have selected an image")
 
     def exit(self, *args):
         self.close()
 
     def open(self):
-        toast(self.images_folder)
         self.show(self.images_folder)
 
 
@@ -182,7 +217,7 @@ class ImageCollectionTab(MDBottomNavigationItem):
                          icon="image-frame", **kwargs)
 
         ImageCollectionTab.x_size = self.size[0]
-        ImageCollectionTab.image_chooser = ImageChooser()
         ImageCollectionTab.image_collection = ImageCollection()
+        ImageCollectionTab.image_chooser = ImageChooser()
 
         self.add_widget(ImageCollectionTab.image_collection)

@@ -22,11 +22,107 @@ class ImageCell(SmartTile):
         self.box_color = (0, 0, 0, 0)
 
 
-class ImagesGrid(MDGridLayout):
-    def __init__(self, scale=1, **kwargs):
+class ThreeHorizontalImagesGrid(MDGridLayout):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.cols = 3
+        self.rows = 1
+        self.size_hint = (1, 0.25)
         self.padding = (dp(2), dp(2))
         self.spacing = dp(4)
+
+    @property
+    def has_free_cells(self):
+        if len(self.cols) >= len(self.children):
+            return False
+        return True
+
+
+class ThreeImagesBlockGrid(MDGridLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.cols = 2
+        self.rows = 1
+        self.size_hint = (1, 0.5)
+        self.padding = (dp(2), dp(2))
+        self.spacing = dp(4)
+
+
+class TwoVerticalImagesGrid(MDGridLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.cols = 1
+        self.rows = 2
+        self.size_hint = (0.33, 1)
+        self.padding = (dp(2), dp(2))
+        self.spacing = dp(4)
+
+    @property
+    def has_free_cells(self):
+        if len(self.rows) >= len(self.children):
+            return False
+        return True
+
+
+class BigImageGrid(MDGridLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.cols = 1
+        self.rows = 1
+        self.size_hint = (0.66, 1)
+        self.padding = (dp(2), dp(2))
+        self.spacing = dp(4)
+
+    @property
+    def has_free_cells(self):
+        if len(self.rows) >= len(self.children):
+            return False
+        return True
+
+
+class ImageGridBuilder(MDGridLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.cols = 1
+        self.size_hint = (1, 1.1)
+        self._current_grid = None
+        self.images = []
+        self._to_next_grid()
+
+    def _to_next_grid(self):
+        if self._current_grid == self.first_row_grid:
+            self._current_grid = self.middle_small_images_grid
+        elif self._current_grid == self.middle_small_images_grid:
+            self._current_grid = self.middle_big_image_grid
+        elif self._current_grid == self.middle_big_image_grid:
+            self._current_grid = self.last_row_grid
+        else:
+            self._make_new_grid()
+            self._current_grid = self.first_row_grid
+
+    def add_image(self, source):
+        image = ImageCell(source=source)
+        if not self._current_grid.has_free_cells:
+            self._to_next_grid()
+        self._current_grid.add_widget(image)
+
+    def _make_new_grid(self):
+        self.first_row_grid = ThreeHorizontalImagesGrid()
+        self.last_row_grid = ThreeHorizontalImagesGrid()
+        middle_block_grid = ThreeImagesBlockGrid()
+        self.middle_small_images_grid = TwoVerticalImagesGrid()
+        self.middle_big_image_grid = BigImageGrid()
+
+        middle_block_grid.add_widget(self.middle_small_images_grid)
+        middle_block_grid.add_widget(self.middle_big_image_grid)
+
+        self.last_row_grid.add_widget(self.images[6])
+        self.last_row_grid.add_widget(self.images[7])
+        self.last_row_grid.add_widget(self.images[8])
+
+        self.add_widget(self.first_row_grid)
+        self.add_widget(middle_block_grid)
+        self.add_widget(self.last_row_grid)
 
 
 class ImageChooser(MDFileManager):
@@ -39,7 +135,7 @@ class ImageChooser(MDFileManager):
         self.images_folder = f"{self.external_storage}/Pictures"
 
     def select_path(self, path):
-        ImageCollectionTab.image_collection.new_image.source = path
+        ImageCollectionTab.image_collection.builder.add_image(path)
         self.exit()
         toast("You have selected an image")
 
@@ -56,17 +152,6 @@ class ImageCollection(MDGridLayout):
         super().__init__(cols=1, **kwargs)
 
         self.__next_image_index = 0
-        self.images = (
-            ImageCell(),
-            ImageCell(),
-            ImageCell(),
-            ImageCell(),
-            ImageCell(),
-            ImageCell(),
-            ImageCell(),
-            ImageCell(),
-            ImageCell(),
-        )
 
         self.add_image_button = MDFloatingActionButton(
             icon="plus",
@@ -74,54 +159,15 @@ class ImageCollection(MDGridLayout):
         )
 
         self.scroll_view = ScrollView(size_hint=(1, 1))
-        self.layout = ImagesGrid(cols=1, size_hint=(1, 1.1))
 
-        self.load_images()
+        self.builder = ImageGridBuilder()
 
-        self.scroll_view.add_widget(self.layout)
+        self.scroll_view.add_widget(self.builder)
         self.add_widget(self.scroll_view)
         self.add_widget(self.add_image_button)
 
-    @property
-    def new_image(self):
-        if self.__next_image_index > 8:
-            self.__next_image_index = 0
-        cell = self.images[self.__next_image_index]
-        self.__next_image_index += 1
-        return cell
-
     def open_image_chooser(self, touch):
         ImageCollectionTab.image_chooser.open()
-
-    def load_images(self):
-        self.layout.clear_widgets()
-
-        first_row_layout = ImagesGrid(cols=3, rows=1, size_hint=(1, 0.25))
-        last_row_layout = ImagesGrid(cols=3, rows=1, size_hint=(1, 0.25))
-        middle_block_layout = ImagesGrid(cols=2, rows=1, size_hint=(1, 0.5))
-        inner_small_images_layout = ImagesGrid(
-            cols=1, rows=2, size_hint=(0.33, 1))
-        inner_big_image_layout = ImagesGrid(
-            cols=1, rows=1, scale=2, size_hint=(0.66, 1))
-
-        first_row_layout.add_widget(self.images[0])
-        first_row_layout.add_widget(self.images[1])
-        first_row_layout.add_widget(self.images[2])
-
-        inner_small_images_layout.add_widget(self.images[3])
-        inner_big_image_layout.add_widget(self.images[4])
-        inner_small_images_layout.add_widget(self.images[5])
-
-        middle_block_layout.add_widget(inner_small_images_layout)
-        middle_block_layout.add_widget(inner_big_image_layout)
-
-        last_row_layout.add_widget(self.images[6])
-        last_row_layout.add_widget(self.images[7])
-        last_row_layout.add_widget(self.images[8])
-
-        self.layout.add_widget(first_row_layout)
-        self.layout.add_widget(middle_block_layout)
-        self.layout.add_widget(last_row_layout)
 
 
 class ImageCollectionTab(MDBottomNavigationItem):

@@ -104,12 +104,7 @@ class BlockOfImages(ImageGrid):
             self._make_new_grid()
 
     def get_free_cell(self):
-        print(self._last_row_grid.children[0].source)
-        print(self._last_row_grid.children[1].source)
-        print(self._last_row_grid.children[2].source)
-        print("skip")
-        if self._last_row_grid.children[2].source:
-            print("last row end")
+        if self._last_row_grid.children[0].source:
             return
         image = self._current_grid.get_free_cell()
         if not image:
@@ -149,16 +144,14 @@ class ImageGridBuilder(MDGridLayout):
 
     def _to_next_block(self):
         self._idx += 1
+        print(f"block - {self._idx}")
         self._current_block = self.blocks[self._idx]
 
     def add_image(self, source):
         image = self._current_block.get_free_cell()
-        print(self._idx)
-        print(image)
         if not image:
             self._to_next_block()
             image = self._current_block.get_free_cell()
-            print(self._idx)
         image.source = source
 
 
@@ -169,7 +162,7 @@ class ImageChooser(MDFileManager):
         self.exit_manager = self.exit
         self.preview = False
         self.external_storage = os.getenv('EXTERNAL_STORAGE')
-        self.images_folder = f"{self.external_storage}/Pictures"
+        self.images_folder = os.path.join(self.external_storage, "Pictures")
 
     def select_path(self, path):
         ImageCollectionTab.image_collection.builder.add_image(path)
